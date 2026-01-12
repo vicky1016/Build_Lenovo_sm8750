@@ -25,6 +25,11 @@ on:
         required: false
         default: ''
 
+      sukisu_branch:
+        description: "⚙️ SukiSU分支或版本 (默认builtin)"
+        required: false
+        default: 'builtin'
+
       enable_feature_a:
         description: "开启BBG基带守护"
         required: false
@@ -109,6 +114,8 @@ jobs:
             echo "使用自定义构建时间: ${{ github.event.inputs.custom_kernel_time }}"
             echo "KERNEL_TIME=${{ github.event.inputs.custom_kernel_time }}" >> $GITHUB_ENV
           fi
+          echo "使用SukiSU分支: ${{ github.event.inputs.sukisu_branch }}"
+          echo "SUKISU_BRANCH=${{ github.event.inputs.sukisu_branch }}" >> $GITHUB_ENV
 
       - name: 🛠 Install dependencies and Initialize repo and sync （安装环境依赖+初始化源码仓库及工具链）
         run: |
@@ -209,7 +216,7 @@ jobs:
         run: |
             cd kernel_workspace
             echo "正在配置SukiSU Ultra..."
-            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s builtin
+            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s "$SUKISU_BRANCH"
             cd ./KernelSU
             # 获取当前 Git 提交的短哈希 (8位)
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
