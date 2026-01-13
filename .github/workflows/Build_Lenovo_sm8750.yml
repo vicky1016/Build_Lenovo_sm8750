@@ -290,7 +290,10 @@ jobs:
         run: |
           cd kernel_workspace
           echo "正在添加SukiSU Ultra补丁..."
-          git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH"
+          git clone https://github.com/ShirkNeko/susfs4ksu.git 
+          cd ./susfs4su
+          git checkout "$SUSFS_BRANCH"
+          cd ..
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
