@@ -30,6 +30,17 @@ on:
         required: false
         default: 'builtin'
 
+      susfs_branch:
+        description: "⚙️ SUSFS分支或版本 (默认gki-android15-6.6)"
+        required: false
+        default: 'gki-android15-6.6'
+
+      apply_10_enable_susfs_for_ksu:
+        description: "应用补丁10_enable_susfs_for_ksu.patch（一般使用builtin分支时不要勾选此选项）"
+        required: false
+        default: false
+        type: boolean
+
       enable_feature_a:
         description: "开启BBG基带守护"
         required: false
@@ -116,6 +127,9 @@ jobs:
           fi
           echo "使用SukiSU分支: ${{ github.event.inputs.sukisu_branch }}"
           echo "SUKISU_BRANCH=${{ github.event.inputs.sukisu_branch }}" >> $GITHUB_ENV
+          echo "使用SUSFS分支: ${{ github.event.inputs.susfs_branch }}"
+          echo "SUSFS_BRANCH=${{ github.event.inputs.susfs_branch }}" >> $GITHUB_ENV
+
 
       - name: 🛠 Install dependencies and Initialize repo and sync （安装环境依赖+初始化源码仓库及工具链）
         run: |
@@ -276,13 +290,20 @@ jobs:
         run: |
           cd kernel_workspace
           echo "正在添加SukiSU Ultra补丁..."
-          git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-android15-6.6
+          git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH"
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
           cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.6.patch ./common/
           cp ./SukiSU_patch/69_hide_stuff.patch ./common/
+          if [ "${{ github.event.inputs.apply_10_enable_susfs_for_ksu }}" == 'true' ]; then
+            echo "apply 10_enable_susfs_for_ksu.patch"
+            cd ./KernelSU
+            patch -p1 < 10_enable_susfs_for_ksu.patch
+            cd ..
+          fi
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
           patch -p1 < 69_hide_stuff.patch || true
