@@ -291,7 +291,7 @@ jobs:
           cd kernel_workspace
           echo "正在添加SukiSU Ultra补丁..."
           git clone https://github.com/ShirkNeko/susfs4ksu.git 
-          cd ./susfs4su
+          cd ./susfs4ksu
           git checkout "$SUSFS_BRANCH"
           cd ..
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
