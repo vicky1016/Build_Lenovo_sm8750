@@ -35,11 +35,18 @@ on:
         required: false
         default: 'gki-android15-6.6'
 
-      apply_10_enable_susfs_for_ksu:
-        description: "应用补丁10_enable_susfs_for_ksu.patch（一般使用builtin分支时不要勾选此选项）"
+      apply_lz4_zstd:
+        description: "启用lz4 & zstd补丁"
         required: false
         default: false
         type: boolean
+
+      apply_bbr:
+        description: "启用BBR"
+        required: false
+        default: false
+        type: boolean
+
 
       enable_feature_a:
         description: "开启BBG基带守护"
@@ -301,12 +308,6 @@ jobs:
           cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           cp ./SukiSU_patch/hooks/scope_min_manual_hooks_v1.6.patch ./common/
           cp ./SukiSU_patch/69_hide_stuff.patch ./common/
-          if [ "${{ github.event.inputs.apply_10_enable_susfs_for_ksu }}" == 'true' ]; then
-            echo "apply 10_enable_susfs_for_ksu.patch"
-            cd ./KernelSU
-            patch -p1 < 10_enable_susfs_for_ksu.patch
-            cd ..
-          fi
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
           patch -p1 < 69_hide_stuff.patch || true
@@ -318,6 +319,7 @@ jobs:
           esac
 
       - name: ⚙️ apply lz4 lz4 1.10.0 & zstd 1.5.7 Patch (应用lz4 1.10.0 & zstd 1.5.7补丁)
+        if: ${{inputs.apply_lz4_zstd}}
         run: |
           echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
           cd kernel_workspace
@@ -344,6 +346,8 @@ jobs:
       - name: 🔧 Set gki_defconfig (设置编译配置)
         env:
           ENABLE_B: ${{ github.event.inputs.enable_feature_b }} 
+          LZ4_ZSTD: ${{ github.event.inputs.apply_lz4_zstd }} 
+          BBR: ${{ github.event.inputs.apply_bbr }} 
         run: |
           cd kernel_workspace
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -353,15 +357,19 @@ jobs:
           else
             echo "CONFIG_KPM=n" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-          echo "CONFIG_CRYPTO_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
 
+          if [ "$LZ4_ZSTD" = "true" ]; then
+            echo "CONFIG_CRYPTO_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
+
+          if [ "$BBR" = "true" ]; then
           echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -370,6 +378,7 @@ jobs:
           echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
           
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
